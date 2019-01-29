@@ -1,0 +1,176 @@
+---
+title: "Black Friday Clustering Using All Methods"
+output: html_notebook
+---
+# Problem Statement.
+We are unsure on how the suppliers performed over Black Friday for Retailer 1. It would be useful to see how they performed to understand how much Retailer 1 is benefitting from these suppliers.
+
+# Suggested solution.
+Use K-means clustering, DBSCAN and APcluster to group together suppliers based on the quantity of sales vs the average value of their sales.
+
+# 1. Overview
+
+This notebook uses k-means clustering, Affinity Propagation and DBscan to group suppliers for Retailer 1 based on the quantity of sales vs the average value of their sales.
+
+# 2. Load libraries
+
+Tidyverse, dbscan and apcluster will cover everything I need to do.
+```{r}
+#install.packages("tidyverse")
+#install.packages("dbscan")
+#install.packages("apcluster")
+library(tidyverse)
+library(dbscan)
+library(apcluster)
+```
+
+# 3. Load data
+
+Import the CSV file for Retailer 1 into R, and use 'head' to preview the new data.
+```{r}
+data <- read.csv('BF Clusterings.csv')
+head(data)
+```
+
+# 4. Explore and transform the data
+
+Looking at the data it is clear to see that the column headers can be renamed to make it easier for 3rd parties to understand the data.
+```{r}
+# The column headers are confusing due to the symbols I will rename them to replace the '.' with a space.
+names(data) <- c("Supplier", "Average Order Cost (£)", "Count of Orders")
+
+# I will check the the changes have worked as expected.
+head(data)
+```
+
+# 5. Visualise the data
+
+Now that my data is in the format I want, I can visualise this data in a scatter plot. This will give me a good chance to eyeball the data and get an idea of what I might expect to see from the final result.
+```{r}
+qplot(x = data$`Average Order Cost (£)`, y = data$`Count of Orders`, label = data$Supplier, geom = "text")
+```
+
+
+# K-MEANS
+# 1. Fine tuning k-means
+
+Use WSS to determine the optimal amount of clusters.
+```{r}
+kClustersMax <- 10
+
+wss <- sapply(1:kClustersMax,
+        function(k){kmeans(data[,2:3], k)$tot.withinss})
+
+plot(1:kClustersMax, wss,
+       type="b", pch = 19, frame = FALSE,
+       xlab="Number of clusters K",
+       ylab="Total within-clusters sum of squares")
+```
+
+# 2. Clustering
+
+R has a built in `kmeans` function that I can use to create my clusters. [This documentation](https://stat.ethz.ch/R-manual/R-devel/library/stats/html/kmeans.html) explains how to use it.
+```{r}
+# Use the wss graph from the previous step to decide the optimum number of clusters.
+kClusters <- 5
+
+# Use the kmeans function and store the result in a variable
+kMeansResult <- kmeans(data[,2:3], centers = kClusters)
+
+# Create a new column in your dataset to show which cluster each ward belongs to
+data$cluster <- kMeansResult$cluster
+
+# Make sure your new cluster column is a factor, not an integer
+data$cluster <- as.factor(data$cluster)
+
+# Export clustered suppliers as CSV
+write.csv(data, file = "Clustered BF.csv")
+
+head(data)
+```
+
+# 3. Visualise the clusters
+
+Use qplot again to visualise the clustered data on the same scatterplot.
+```{r}
+qplot(x = data$`Average Order Cost (£)`, y = data$`Count of Orders`, label = data$Supplier, geom = "text", color = data$cluster)
+```
+
+
+# AFFINITY PROPAGATION
+# 1. Reset the data
+
+```{r}
+data <- read.csv('BF Clusterings.csv')
+names(data) <- c("Supplier", "Average Order Cost (£)", "Count of Orders")
+```
+
+# 2. Use APCLUSTER to cluster the data.
+
+AP clustering can be used to group the Black Friday data.
+Useful resources:
+[How affinity propagation works](https://medium.com/@aneesha/using-affinity-propagation-to-find-the-number-of-clusters-in-a-dataset-52f5dd3b0760)
+
+Looking at the WSS method from the K-means clustering I can see that the optimum number of clusters is ~5
+```{r}
+clustered <- apclusterK(negDistMat(r=2), data, K = 5)
+show(clustered)
+```
+
+# 3. Plot out the clusters.
+
+Now that I have clustered my data I can visualise this using the plot function.
+```{r}
+plot(clustered, data[,2:3], xlab = "Average Value of Sale (£)", ylab = "Count of Sales")
+```
+
+
+#DBSCAN
+# 1. Reset the data
+
+```{r}
+data <- read.csv('BF Clusterings.csv')
+names(data) <- c("Supplier", "Average Order Cost (£)", "Count of Orders")
+```
+
+# 2. Clustering using DBSCAN and LOF (Local Outlier Factor)
+
+I will use DBSCAN to cluster the Black Friday data. 
+Useful resources:
+[How DBSCAN works](https://towardsdatascience.com/how-dbscan-works-and-why-should-i-use-it-443b4a191c80)
+[How LOF works](https://towardsdatascience.com/local-outlier-factor-for-anomaly-detection-cc0c770d2ebe)
+[Source for DBSCAN and LOF code](https://github.com/mhahsler/dbscan)
+
+I will start by using DBSCAN to see the cluster in this data set.
+```{r}
+x <- as.matrix(data[, 2:3])
+db <- dbscan(x, eps = 50, minPts = 1)
+db
+```
+
+Now I can use a scatter plot to visualise these clusters.
+```{r}
+plot(x, col = db$cluster + 1L)
+```
+I can also visualise this using 'pairs' to clearly show the 2 variables
+```{r}
+pairs(x, col = db$cluster + 1L)
+```
+
+LOF can be used to show outliers in this data set. (Probably more useful in larger data sets)
+```{r}
+lof <- lof(x, k = 8)
+plot(x, cex = lof)
+```
+
+# 3. Use HDBSCAN to heirachically cluster the data set.
+First, cluster the groups using the hdbscan function.
+```{r}
+hdb <- hdbscan(x, minPts = 2)
+hdb
+```
+
+Now I can visualise this using plot.
+```{r}
+plot(hdb, show_flat = T, gradient = c("yellow", "orange", "red", "blue"))
+```

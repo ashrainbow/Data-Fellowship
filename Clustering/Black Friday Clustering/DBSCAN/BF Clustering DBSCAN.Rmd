@@ -1,12 +1,12 @@
 ---
-title: "Black Friday Clustering"
+title: "Black Friday Clustering Using DBSCAN"
 output: html_notebook
 ---
 # Problem Statement.
 We are unsure on how the suppliers performed over Black Friday for Retailer 1. It would be useful to see how they performed to understand how much Retailer 1 is benefitting from these suppliers.
 
 # Suggested solution.
-Use K-means clustering to group together suppliers based on the quantity of sales vs the average value of their sales.
+Use DBSCAN clustering to group together suppliers based on the quantity of sales vs the average value of their sales.
 
 # 1. Overview
 

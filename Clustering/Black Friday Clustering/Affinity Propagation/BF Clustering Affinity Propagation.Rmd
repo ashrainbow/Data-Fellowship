@@ -1,0 +1,69 @@
+---
+title: "Black Friday Clustering Using Affinity Propagation (AP)"
+output: html_notebook
+---
+# Problem Statement.
+We are unsure on how the suppliers performed over Black Friday for Retailer 1. It would be useful to see how they performed to understand how much Retailer 1 is benefitting from these suppliers.
+
+# Suggested solution.
+Use AP clustering to group together suppliers based on the quantity of sales vs the average value of their sales.
+
+# 1. Overview
+
+This notebook uses Affinity Propagation clustering to group suppliers for Retailer 1 based on the quantity of sales vs the average value of their sales.
+
+# 2. Load libraries
+
+I can use Tidyverse and apcluster to complete this task.
+
+```{r}
+#install.packages("tidyverse")
+#install.packages("apcluster")
+library(tidyverse)
+library(apcluster)
+```
+
+# 3. Load data
+
+Import the CSV file for Retailer 1 into R, and use 'head' to preview the new data.
+
+```{r}
+data <- read.csv('BF Clusterings.csv')
+head(data)
+```
+
+# 4. Explore and transform the data
+
+Looking at the data it is clear to see that the column headers can be renamed to make it easier for 3rd parties to understand the data.
+
+```{r}
+# The column headers are confusing due to the symbols I will rename them to replace the '.' with a space.
+names(data) <- c("Supplier", "Average Order Cost (£)", "Count of Orders")
+
+# I will check the the changes have worked as expected.
+head(data)
+```
+
+# 5. Visualise the data
+
+Now that my data is in the format I want, I can visualise this using a scatter plot. This will give me a good chance to eyeball the data and get an idea of what I might expect to see from the final result.
+
+```{r}
+qplot(x = data$`Average Order Cost (£)`, y = data$`Count of Orders`, label = data$Supplier, geom = "text")
+```
+
+# 6. Use APCLUSTERS to cluster the data.
+
+After seeing the data you can get an idea of how many clusters there may be. In this case I will say 4 other methods can be used to get a more accurate idea of the optimum number of clusters.
+
+```{r}
+clustered <- apclusterK(negDistMat(r=2), data, K = 4)
+show(clustered)
+```
+
+# 8. Plot out the clusters.
+
+Now that I have clustered my data I can visualise this using the plot function.
+```{r}
+plot(clustered, data[,2:3], xlab = "Average Value of Sale (£)", ylab = "Count of Sales")
+```

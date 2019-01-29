@@ -1,0 +1,98 @@
+---
+title: "Black Friday Clustering"
+output: html_notebook
+---
+# Problem Statement.
+We are unsure on how the suppliers performed over Black Friday for Retailer 1. It would be useful to see how they performed to understand how much Retailer 1 is benefitting from these suppliers.
+
+# Suggested solution.
+Use K-means clustering to group together suppliers based on the quantity of sales vs the average value of their sales.
+
+# 1. Overview
+
+This notebook uses k-means clustering to group suppliers for Retailer 1 based on the quantity of sales vs the average value of their sales.
+
+# 2. Load libraries
+
+The Tidyverse collection of libraries includes all of the packages required to complete this analysis.
+
+```{r}
+#install.packages("tidyverse")
+
+library(tidyverse)
+```
+
+# 3. Load data
+
+Import the CSV file for Retailer 1 into R, and use 'head' to preview the new data.
+
+```{r}
+data <- read.csv('BF Clusterings.csv')
+head(data)
+```
+
+# 4. Explore and transform the data
+
+Looking at the data it is clear to see that the column headers can be renamed to make it easier for 3rd parties to understand the data.
+
+```{r}
+# The column headers are confusing due to the symbols I will rename them to replace the '.' with a space.
+names(data) <- c("Supplier", "Average Order Cost (£)", "Count of Orders")
+
+# I will check the the changes have worked as expected.
+head(data)
+```
+
+# 5. Visualise the data
+
+Now that my data is in the format I want, I can visualise this data in a scatter plot. This will give me a good chance to eyeball the data and get an idea of what I might expect to see from the final result.
+
+```{r}
+qplot(x = data$`Average Order Cost (£)`, y = data$`Count of Orders`, label = data$Supplier, geom = "text")
+```
+
+# 6. Fine tuning k-means
+
+Use wss to determine the optimal amount of clusters.
+```{r}
+kClustersMax <- 10
+
+wss <- sapply(1:kClustersMax,
+        function(k){kmeans(data[,2:3], k)$tot.withinss})
+
+plot(1:kClustersMax, wss,
+       type="b", pch = 19, frame = FALSE,
+       xlab="Number of clusters K",
+       ylab="Total within-clusters sum of squares")
+```
+
+# 7. Clustering
+
+R has a built in `kmeans` function that I can use to create my clusters. [This documentation](https://stat.ethz.ch/R-manual/R-devel/library/stats/html/kmeans.html) explains how to use it.
+
+```{r}
+# Use the wss graph from step 6 to decide the optimum number of clusters.
+kClusters <- 5
+
+# Use the kmeans function and store the result in a variable
+kMeansResult <- kmeans(data[,2:3], centers = kClusters)
+
+# Create a new column in your dataset to show which cluster each ward belongs to
+data$cluster <- kMeansResult$cluster
+
+# Make sure your new cluster column is a factor, not an integer
+data$cluster <- as.factor(data$cluster)
+
+# Export clustered suppliers as CSV
+write.csv(data, file = "Clustered BF.csv")
+
+head(data)
+```
+
+# 8. Visualise your clusters
+
+Use qplot again to visualise the clustered data on the same scatterplot.
+
+```{r}
+qplot(x = data$`Average Order Cost (£)`, y = data$`Count of Orders`, label = data$Supplier, geom = "text", color = data$cluster)
+```

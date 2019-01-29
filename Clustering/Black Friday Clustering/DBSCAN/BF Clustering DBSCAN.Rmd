@@ -1,0 +1,95 @@
+---
+title: "Black Friday Clustering"
+output: html_notebook
+---
+# Problem Statement.
+We are unsure on how the suppliers performed over Black Friday for Retailer 1. It would be useful to see how they performed to understand how much Retailer 1 is benefitting from these suppliers.
+
+# Suggested solution.
+Use K-means clustering to group together suppliers based on the quantity of sales vs the average value of their sales.
+
+# 1. Overview
+
+This notebook uses DBSCAN clustering to group suppliers for Retailer 1 based on the quantity of sales vs the average value of their sales.
+
+# 2. Load libraries
+
+DBSCAN and Tidyverse's collection of libraries includes all of the packages required to complete this analysis.
+
+```{r}
+#install.packages("tidyverse")
+#install.packages("dbscan")
+library(dbscan)
+library(tidyverse)
+```
+
+# 3. Load data
+
+Import the CSV file for Retailer 1 into R, and use 'head' to preview the new data.
+
+```{r}
+BFdata <- read.csv('BF Clusterings.csv')
+head(BFdata)
+```
+
+# 4. Explore and transform the data
+
+Looking at the data it is clear to see that the column headers can be renamed to make it easier for 3rd parties to understand the data.
+
+```{r}
+# The column headers are confusing due to the symbols I will rename them to replace the '.' with a space.
+names(BFdata) <- c("Supplier", "Average Order Cost (£)", "Count of Orders")
+
+# I will check the the changes have worked as expected.
+head(BFdata)
+```
+
+# 5. Visualise the data
+
+Now that my data is in the format I want, I can visualise this data in a scatter plot. This will give me a good chance to eyeball the data and get an idea of what I might expect to see from the final result.
+
+```{r}
+qplot(x = BFdata$`Average Order Cost (£)`, y = BFdata$`Count of Orders`, label = BFdata$Supplier, geom = "text")
+```
+
+# 6. Clustering using DBSCAN and LOF (Local Outlier Factor)
+
+I will use DBSCAN to cluster the Black Friday data. 
+Useful resources:
+[How DBSCAN works -](https://towardsdatascience.com/how-dbscan-works-and-why-should-i-use-it-443b4a191c80)
+[How LOF works -](https://towardsdatascience.com/local-outlier-factor-for-anomaly-detection-cc0c770d2ebe)
+[Source for DBSCAN and LOF code -](https://github.com/mhahsler/dbscan)
+
+I will start by using DBSCAN to see the cluster in this data set.
+```{r}
+x <- as.matrix(BFdata[, 2:3])
+db <- dbscan(x, eps = 50, minPts = 1)
+db
+```
+
+Now I can use a scatter plot to visualise these clusters.
+```{r}
+plot(x, col = db$cluster + 1L)
+```
+I can also visualise this using 'pairs' to clearly show the 2 variables
+```{r}
+pairs(x, col = db$cluster + 1L)
+```
+
+LOF can be used to show outliers in this data set. (Probably more useful in larger data sets)
+```{r}
+lof <- lof(x, k = 8)
+plot(x, cex = lof)
+```
+
+# 7. Use HDBSCAN to heirachically cluster the data set.
+First, cluster the groups using the hdbscan function.
+```{r}
+hdb <- hdbscan(x, minPts = 2)
+hdb
+```
+
+Now I can visualise this using plot.
+```{r}
+plot(hdb, show_flat = T, gradient = c("yellow", "orange", "red", "blue"))
+```

@@ -1,0 +1,92 @@
+---
+title: "South Oxfordshire Hoodmaps with Code"
+output: html_notebook
+---
+
+# 1. Overview
+This notebook uses k-means clustering to group areas in South Oxfordshire.
+
+# 2. Load libraries
+
+The Tidyverse collection of libraries includes all of the packages required to complete this analysis.
+
+This is also a good point to set your working directory to the folder you'll use to save your data.
+
+```{r}
+install.packages("tidyverse")
+
+library(tidyverse)
+```
+
+# 3. Load data
+Import the CSV file for South Oxfordshire Statisticsinto R.
+```{r}
+data <- read.csv('Soxon Statistics.csv')
+```
+
+# 3. Explore and transform your data
+
+Take a look at the data you've just imported to make sure everything loaded properly.
+
+After a quick glance, I noticed there were a few changes I wanted to make.
+
+```{r}
+# The column headers are lengthy. I want to change each of them to be shorter and clearer.
+names(data) <- c("Area", "Average Age", "Unployment Rate (%)")
+
+# Now I can take a look at my data and see how it has changed.
+head(data)
+```
+
+# 4. Visualise your data
+
+Now that my data is in the format I want, I can take a quick look at it using qplot.
+
+```{r}
+qplot(x = data$`Average Age`, y = data$`Unployment Rate (%)`, label = data$Area, geom = "text")
+```
+
+# 5. Clustering
+
+R has a built in `kmeans` function that I can use to create my clusters. [This documentation](https://stat.ethz.ch/R-manual/R-devel/library/stats/html/kmeans.html) explains how to use it.
+
+```{r}
+# Let's guess that our dataset has 3 clusters.
+kClusters <- 3
+
+# Let's use the kmeans function and store the result in a variable
+kMeansResult <- kmeans(data[,2:3], centers = kClusters)
+
+# The code above can also be written as kMeansResult <- kmeans(data[,2:3], centers = kClusters)
+
+# Create a new column in your dataset to show which cluster each ward belongs to
+data$cluster <- kMeansResult$cluster
+
+# Make sure your new cluster column is a factor, not an integer
+data$cluster <- as.factor(data$cluster)
+
+View(data)
+```
+
+# 6. Visualise your clusters
+
+Use qplot again to
+
+```{r}
+qplot(x = data$`Average Age`, y = data$`Unployment Rate (%)`, label = data$Area, geom = "text", color = data$cluster)
+```
+
+# Fine tuning k-means
+
+Use wss to determine the optimal amount of clusters.
+```{r}
+kClustersMax <- 10
+
+wss <- sapply(1:kClustersMax,
+        function(k){kmeans(data[,2:3], k)$tot.withinss})
+
+plot(1:kClustersMax, wss,
+       type="b", pch = 19, frame = FALSE,
+       xlab="Number of clusters K",
+       ylab="Total within-clusters sum of squares")
+```

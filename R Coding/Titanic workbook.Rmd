@@ -1,0 +1,219 @@
+---
+title: "Titanic Project in R"
+output: html_notebook
+---
+# 1. Overview
+Studying the survival rates from the titanic
+
+# 2. Set up WD and import required libraries
+```{r}
+#Setting the working directory
+setwd("C:/Users/Ashley Rainbow/Desktop/Data Fellowship/data-fellowship/R Coding")
+
+#Load Readr
+library(readr)
+```
+
+# 3. Import required files
+```{r}
+#Loading the train data set
+train <- read_csv("train.csv")
+View(train)
+
+#Loading the test data set
+test <- read_csv("test.csv")
+View(test)
+```
+
+# 4. Inspect the newly imported files
+```{r}
+#View the class of train data set
+class(train)
+
+#View the structure of the train data set
+str(train)
+```
+
+# 5. From inspecting the files I can see that the class of Pclass, Survived and Name is incorrect.
+```{r}
+#Set train$Pclass and train$Survived as a factor 
+train$Pclass <- as.factor(train$Pclass)
+train$Survived <- as.factor(train$Survived)
+
+#Set train$Name as a character
+train$Name <- as.character(train$Name)
+```
+
+# 6. Test to check for any duplicate data.
+```{r}
+#Check for duplicate data
+print("There should be 891 unique values.")
+length(unique(train$PassengerId))
+```
+
+# 7. Now take a look at the test data.
+```{r}
+#View the structure of the test data set
+str(test)
+```
+
+# 8. You can see, like step 5, you can see that the class of Pclass and Name is set incorrectly
+```{r}
+#Set test$Pclass as factor
+test$Pclass <- as.factor(test$Pclass) 
+
+#Set test$Name as factor
+test$Name <- as.character(test$Name)
+```
+
+# 9. Test to check for any duplicate data.
+```{r}
+#Check for duplicate data
+print("There should be 418 unique values.")
+length(unique(test$PassengerId))
+```
+
+# 10. Store survival rates to train_count_died and train_count_died. Then create proportion table. 
+```{r}
+#Explore the data
+table(train$Survived)
+
+#Store the values
+train_survived_table <- table(train$Survived)
+
+#Storing the count of survived and died
+train_count_died <- c(train_survived_table[1])
+train_count_survived <- c(train_survived_table[2])
+
+#Creating proportions table
+proportional_survived <- prop.table(table(train$Survived))
+```
+
+# 11. Plot Sex vs Survival.
+```{r}
+#Loading ggplot2
+library(ggplot2)
+
+#Plotting sex and survival
+ggplot(train, aes(x = Sex, fill = factor(Survived))) +
+  geom_bar(width = 0.5) +
+  xlab("Sex") +
+  ylab("Total count") +
+  labs(fill = "Survived")
+```
+
+# 12. Create model to predict survival.
+```{r}
+#Adding a model prediction column
+train$ModelPrediction <- as.factor("TBD")
+head(train)
+
+#***[this code is inneficient]***
+#model_prediction <- rep(c("TBD"), each = 891)
+#train <- cbind(train, model_prediction)
+#colnames(train)[which(names(train) == "model_prediction")] <- "ModelPrediction"
+#head(train)
+#***resume normal coding***
+
+#*******************************************************************************
+class(train$ModelPrediction)
+#Make all values in train$ModelPrediction "0"
+train$ModelPrediction <- 0
+head(train)
+factor(train$ModelPrediction, levels = c(0, 1))
+head(train)
+#*******************************************************************************
+```
+
+# 13. Test different conditions
+```{r}
+#Finding the percentage accuracy of prediction when all passengers do not survive
+no_survival <- sum(train$ModelPrediction == train$Survived)/nrow(train)
+
+#Setting male prediction as 0
+train$ModelPrediction[train$Sex == "male"] <- 0
+
+#Setting female prediction as 1
+train$ModelPrediction[train$Sex == "female"] <- 1
+
+head(train)
+
+#Finding the percentage accuracy of the prediction with females surviving
+all_females_survive <- sum(train$ModelPrediction == train$Survived)/nrow(train)
+
+#Creating a table for train classes
+train_passenger_class <- table(train$Pclass)
+
+#Assigning class counts to variables
+train_count_first_class <- c(train_passenger_class[1])
+train_count_second_class <- c(train_passenger_class[2])
+train_count_third_class <- c(train_passenger_class[3])
+
+#Creating proportions table for passenger class
+proportional_class <- prop.table(table(train$Pclass, train$Survived))
+proportional_class
+
+#Plotting gender survival rates including class.
+ggplot(train, aes(x = Sex, fill = Survived)) +
+  geom_bar(width = 0.5) +
+  facet_wrap(~Pclass) +
+  ggtitle("Pclass") +
+  xlab("Sex") +
+  ylab("Total count") +
+  labs(fill = "Survived")
+
+#Setting train$Modelprediction as 0
+train$ModelPrediction <- 0
+head(train)
+
+#Setting train$Modelprediction as 1 for females in first and second class
+train$ModelPrediction[train$Sex == "female"] <- 1
+train$ModelPrediction[train$Pclass == "3"] <- 0
+head(train)
+
+#Finding the percentage accuracy of prediction when 1st and 2nd class females survived
+first_second_class_females_accuracy <- sum(train$ModelPrediction == train$Survived)/nrow(train)
+paste("The first model returned an accuracy of", all_females_survive, "the second model returned an accuracy of", first_second_class_females_accuracy)
+
+#Plotting Pclass, Sex, Age and Survival
+ggplot(train, aes(x = Age, fill = Survived)) +
+  facet_wrap(~Sex + Pclass) +
+  geom_bar(width = 10) +
+  xlab("Age") +
+  ylab("Total count") 
+
+#Resetting the train$ModelPrediction to 0
+train$ModelPrediction <- 0
+
+#Setting train$Modelprediction as 1 for females in first class, second class and for U18's 
+train$ModelPrediction[train$Sex == "female"] <- 1
+train$ModelPrediction[train$Pclass == "3"] <- 0
+train$ModelPrediction[(train$Pclass == "1" | train$Pclass == "2") & train$Sex == "male" & train$Age < 18] <- 1
+
+##Finding the percentage accuracy of prediction when 1st and 2nd class females survived
+upper_class_female_and_u18_accuracy <- sum(train$ModelPrediction == train$Survived)/nrow(train)
+paste("The first model returned an accuracy of", all_females_survive, "the second model returned an accuracy of", upper_class_female_and_u18_accuracy)
+```
+
+# 14. Predict and create export for test data set.
+```{r}
+#Creating submissions df
+submission <- data.frame(test$PassengerId)
+
+#Renaming the submission$test.PassengerId to PassengerId
+names(submission)[names(submission) == "test.PassengerId"] <- "PassengerId"
+View(submission)
+
+#Setting survival rates to 0
+submission$Survived <- as.integer(0)
+factor(submission$Survived, levels = c(0, 1))
+
+#Setting prediction values
+submission$Survived[test$Sex == "female"] <- 1
+submission$Survived[test$Pclass == "3"] <- 0
+submission$Survived[(test$Pclass == "1" | test$Pclass == "2") & test$Sex == "male" & test$Age < 18] <- 1
+View(submission)
+
+#Export submission
+write.csv(submission, file = "AshleyRainbow_Virtualstock_TitanicSubmission.csv")
+```

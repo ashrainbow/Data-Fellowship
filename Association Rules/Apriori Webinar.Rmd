@@ -1,0 +1,75 @@
+---
+title: "Association Rules"
+output: html_notebook
+---
+if lift equals 1 they are independant of each other
+if lift > 1 there is an assosiation and if someone likes x then they are more likely to like y
+
+# 1. Overview
+This Notebook wants to utilise association rules to make a holiday recommendation system. We will use Apriori algorithm.
+
+# 2. Import and load libraries
+The 'arules' library includes lots of functions and algorithms to mine datasets for associations.
+
+```{R}
+install.packages('arules')
+install.packages('tidyverse')
+install.packages('arulesViz')
+install.packages('reshape')
+library('tidyverse')
+library('arules')
+library('arulesViz')
+library('reshape')
+```
+
+# 3. Import Data
+
+```{R}
+data <- read.csv('Destination Recommendations - Open_coh_download.csv')
+head(data)
+```
+
+# 4. Transform the data
+In association rules algorithms the dataframe needs to be of a specific type: TRANSACTION
+
+```{R}
+data <- as(data, "transactions")
+```
+
+# 5. Look at the data
+
+```{R}
+head(data)
+```
+
+```{R}
+summary(data)
+```
+
+```{R}
+inspect(data[1:3])
+```
+
+# 6. Visualise the data
+Use arulesViz
+
+```{R}
+itemFrequencyPlot(data, topN = 10, type = 'absolute')
+```
+
+# 7. Apriori
+Use arules
+
+```{R}
+# create rules for most frequent item sets
+rules = apriori(data = data, parameter = list(support = 0.1, confidence = 0.2, minlen = 3), control = list(verbose = FALSE))
+```
+
+```{R}
+rules = sort(rules, by = 'support', decreasing = TRUE)
+```
+
+# 8. Inspect the transactions
+```{R}
+inspect(rules[1:20])
+```

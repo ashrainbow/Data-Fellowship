@@ -1,0 +1,213 @@
+---
+title: "Association Rules Exercise"
+output: html_notebook
+---
+
+# 1. Overview
+Using Association Rules, find products that are commonly bought together from the Instacart grocery store data.
+
+# 2. Set WD
+```{r}
+setwd("C:/Users/Ashley Rainbow/Desktop/Data Fellowship/data-fellowship/Association Rules/Association Rules exercise")
+```
+
+
+# 3. Load up arules, arulesViz and dplyr
+```{r}
+#install.packages('arules')
+#install.packages('dplyr')
+#install.packages('arulesViz')
+library('arules')
+library('arulesViz')
+library('dplyr')
+```
+
+# 4. Import orders data
+```{r}
+order_data <- read.csv('order_products__prior.csv')
+```
+
+# 5. Import products data
+```{r}
+product_data <- read.csv('products.csv')
+```
+
+# 6. View the imported data
+```{r}
+head(order_data)
+head(product_data)
+```
+
+# 7. Joining the 2 data files
+```{r}
+order_baskets <- order_data %>%
+  inner_join(product_data, by="product_id") %>%
+  group_by(order_id) %>%
+  summarise(basket = as.vector(list(product_name)))
+```
+
+# 8. Looking at the combined file
+```{r}
+head(order_baskets)
+```
+
+# 9. looking at an individual basket
+```{r}
+head(order_baskets$basket[1])
+```
+
+# 10. Converting to a sparse matrix
+```{r}
+sparse_data <- as(order_baskets$basket, "transactions")
+```
+
+# 11. Check out the data using summary
+```{r}
+summary(sparse_data)
+```
+# 12. Check out the data using inspect
+```{r}
+inspect(sparse_data[1:4])
+```
+
+# 13. Plot the 10 most frequent items on a graph
+```{R}
+itemFrequencyPlot(sparse_data, topN = 10, type = 'absolute')
+```
+
+# 14. Use Apriori function to create rules for the most frequent item sets. Ordered by support in increasing orders.
+```{r}
+rules = apriori(data = sparse_data, parameter = list(target = "frequent itemsets", support = 0.008, minlen = 2), control = list(verbose = FALSE))
+
+rules = sort(rules, by = 'support', decreasing = TRUE)
+
+inspect(rules[1])
+```
+
+# 15. Creating a Dataframe based on the rules data.
+```{r}
+order_rules_df <- DATAFRAME(sort(rules, by = "support", decreasing = FALSE))
+```
+
+# 16. Creating a bar plot using the dataframe created in step 15
+```{r}
+par(mar = c(5, 15.5, 1, 1))
+barplot(order_rules_df$support, main = "Order Rules", xlab = "Support", names.arg = order_rules_df$items, horiz = TRUE, las = 2, cex.names = 0.75, xlim = c(0, max(0.02)))
+```
+
+# 17. Finding the most common set of items bought.
+```{r}
+rules = apriori(data = sparse_data, parameter=list(support=0.0024, confidence=0.5, minlen=2, maxlen=3))
+summary(rules)
+inspect(rules[1:20])
+```
+
+```{r}
+plot(rules, method = 'scatterplot', measure = c("support", "confidence"), shading = "lift")
+plot(rules[1:10], method = 'graph', control = list(cex=0.7))
+```
+
+# 18. Viewing the rule sorted by confidence.
+```{r}
+inspect(sort(rules, by = 'confidence', decreasing = TRUE) [1:10])
+```
+
+# 19. Viewing the rule sorted by support.
+```{r}
+inspect(sort(rules, by = 'support', decreasing = TRUE) [1:10])
+```
+
+# 20. Viewing the rule sorted by lift.
+```{r}
+inspect(sort(rules, by = 'lift', decreasing = TRUE) [1:10])
+```
+
+# 21. Finding the most common set of items bought with higher support but lower confidence.
+```{r}
+rules = apriori(data = sparse_data, parameter=list(support=0.004, confidence=0.2, minlen=2, maxlen=3))
+summary(rules)
+inspect(rules[1:20])
+```
+
+```{r}
+plot(rules,method = 'scatterplot', measure = c("support","confidence"), shading = "lift")
+plot(rules[1:10], method="graph",control = list(cex=0.7))
+```
+
+# 22. Lime subsetting.
+```{r}
+rules = apriori(data = sparse_data, parameter = list(support = 0.003, confidence = 0.2, minlen = 2, maxlen = 3))
+lime_rules = sort(
+    subset(rules, subset = rhs %in% 'Limes'),
+    by = 'lift', decreasing = T
+)
+inspect(lime_rules)
+```
+
+# 23. Inspecting the rules sorted by lift and confidence.
+```{r}
+lime_lift = sort(lime_rules, by='lift', decreasing=TRUE)
+paste('Sorted by lift.------------------------------------------------')
+inspect(lime_lift)
+lime_conf = sort(lime_rules, by='confidence', decreasing=TRUE)
+paste('Sorted by confidence.------------------------------------------')
+inspect(lime_conf)
+plot(lime_rules, method="graph",control = list(cex=0.5))
+```
+
+# 24. Generating summary reports for the summary and lift rules.
+```{r}
+paste("Support: ------------------------------------------")
+paste("All rules")
+summary(rules@quality$support)
+paste("Lime rules")
+summary(lime_rules@quality$support)
+
+paste("Lift: ---------------------------------------------")
+paste("All rules")
+summary(rules@quality$lift)
+paste("Lime rules")
+summary(lime_rules@quality$lift)
+```
+
+# 25. Comparing Lime Rule results to the other rules
+
+On average our rules for limes have lower support than the other rules we found.
+On average our rules for limes have a higher lift than the other rules we found.
+
+```{r}
+support_list <- rules@quality$support # list of support values of all rules
+mean_lime_support <- mean(lime_rules@quality$support) # mean value for support of lime rules
+lower_than_mean_rules <- support_list[support_list>c(mean_lime_support)] # pick values of general support list, that are higher than mean lime support
+support_rank <- length(lower_than_mean_rules) # count number of rules (general) that have higher support than the mean lime rule support
+support_rank
+```
+```{r}
+paste("On average, Limes have the", support_rank, "largest support of all the", length(rules), "rules")
+```
+
+```{r}
+confidence_list <- rules@quality$confidence # list of confidence values of all rules
+mean_lime_confidence <- mean(lime_rules@quality$confidence) # mean value for confidence of lime rules
+lower_than_mean_rules_confidence <- support_list[confidence_list>c(mean_lime_confidence)] # pick values of general confidence list, that are higher than mean lime confidence
+confidence_rank <- length(lower_than_mean_rules_confidence) # count number of rules (general) that have higher confidence than the mean lime rule confidence
+confidence_rank
+```
+
+```{r}
+paste("On average, Limes have the", confidence_rank, "largest confidence of all the", length(rules), "rules")
+```
+
+# Summary
+From these results we can see that the limes are a fairly popular product ranking as the 75th most supported product. It also show that the limes are quite likely to be bought with other products as they rank 69th highest based on confidence.
+
+#Definitions
+LHS <- Left hand side
+
+RHS <- Right hand side
+
+Lift <- How likely item X is to be purchased with item Y
+
+Support <- How often item X appears in the transactions. Shown as a percentage. (x/8)*100
+
+Confidence <- How likely item Y is purchased when item X is purchased. (Support{x,y})/(Support{x})

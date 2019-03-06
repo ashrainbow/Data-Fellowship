@@ -1,0 +1,216 @@
+---
+title: "Association Rules Project"
+output:
+  html_notebook: default
+  word_document: default
+---
+
+# 1.Load libraries
+```{r}
+library(dplyr)
+library(arules)
+library(arulesViz)
+```
+
+# 2.Set the working directory
+```{r}
+setwd("C:/Users/Ashley Rainbow/Desktop/Data Fellowship/data-fellowship/Association Rules/Association Rules Project")
+```
+
+# 3.Import the data
+```{r}
+orders <- read.csv('Orders.csv', nrows = 35000)
+```
+
+# 4.Check the data
+```{r}
+head(orders)
+```
+# 5.Change item name from a character string to factor.
+```{r}
+orders$Item.Name <- as.factor(orders$Item.Name)
+```
+
+# 6.Change item name from factor to character
+```{r}
+orders$Order.Number <- as.character(orders$Order.Number)
+```
+
+# 7.Group products by order number
+```{r}
+order_baskets = orders %>% 
+  group_by(Order.Number) %>% summarise(order_basket = as.vector(list(Item.Name)))
+```
+
+# 8.View a sample order_basket
+```{r}
+head(order_baskets)
+```
+
+# 9.Convert to sparse matrix
+```{r}
+sparse_data <- as(order_baskets$order_basket, "transactions")
+```
+
+# 10.Inspect the sparse matrix
+```{r}
+summary(sparse_data)
+inspect(sparse_data[1:20])
+```
+
+# 11.Plot the most popular products
+```{r}
+par(mar = c(4, 5,1, 1))
+itemFrequencyPlot(sparse_data, topN = 10, type = 'absolute', cex.names = 0.5, horiz = TRUE, xlim = c(0, max(800)))
+```
+
+# 12.Create a rule for the most frequent itemset
+```{r}
+rules = apriori(data = sparse_data, parameter = list(target = "frequent itemsets",  support = 0.00015, minlen = 2), control = list(verbose = FALSE))
+rules = sort(rules, by = 'support', decreasing = TRUE)
+inspect(rules[1])
+```
+
+# 13.Create a dataframe base on rules data.
+```{r}
+order_rules_df <- DATAFRAME(sort(rules, by = "support", decreasing = FALSE))
+```
+
+# 14.Create a barplot from the orders dataframe.
+```{r}
+par(mar = c(5,17, 1, 1))
+barplot(order_rules_df$support, main = "Order Rules", xlab = "Support", names.arg = order_rules_df$items, horiz = TRUE, las = 2, cex.names = 0.5, xlim=c(0, max = 0.0006))
+```
+
+# 15.Finding the most common itemsets
+```{r}
+rules = apriori(data = sparse_data, parameter = list(support = 0.0001, confidence = 0.4, minlen = 2))
+```
+
+```{r}
+summary(rules)
+```
+
+```{r}
+inspect(rules[1:10])
+```
+
+# 16.Plotting most common sets of items being bought together.
+```{r}
+plot(rules, method = 'scatterplot', measure = c("support", "confidence"), shading = "lift", jitter = 1)
+```
+
+```{r}
+plot(rules[1:10], method = 'graph', control = list(cex = 0.65))
+```
+
+# 17.Viewing rule sorted by sorted by confidence.
+```{r}
+inspect(sort(rules, by = 'confidence', decreasing = TRUE)[1:10])
+```
+
+# 18.Viewing rule sorted by sorted by support.
+```{r}
+inspect(sort(rules, by = 'support', decreasing = TRUE)[1:10])
+```
+
+# 19.Viewing the rule sorted by lift.
+```{r}
+inspect(sort(rules, by = 'lift', decreasing = TRUE)[1:10])
+```
+
+# 20.Finding the most common set of items bought with higher support but lower confidence.
+```{r}
+rules = apriori(data = sparse_data, parameter = list(support = 0.0003 , confidence = 0.1 , minlen = 2, maxlen = 3))
+```
+
+```{r}
+summary(rules)
+```
+
+```{r}
+inspect(rules)
+```
+
+# 21.Plotting most common sets of items being bought together with low confidence but high support.
+```{r}
+plot(rules, method = 'scatterplot', measure = c("support", "confidence"), shading = "lift", jitter = 1)
+```
+
+```{r}
+plot(rules, method = "graph", control = list (cex = 0.65))
+```
+
+# 22.Creating Fortnite PS4 subset
+```{r}
+rules = apriori(data = sparse_data, parameter = list(support = 0.00001, confidence = 0.01, minlen = 2))
+```
+
+```{r}
+fnps4_rules = sort(
+  subset(rules, subset = rhs %in% 'FORTNITE PS4'),
+  by = 'lift', decreasing = T
+)
+inspect(fnps4_rules)
+```
+
+```{r}
+lift_fnps4 = sort(fnps4_rules, by = 'lift', decreasing = TRUE)
+paste("Sorted by lift. ----------------------------------")
+inspect(lift_fnps4)
+```
+
+```{r}
+confidence_fnps4 = sort(fnps4_rules, by = 'confidence', decreasing = TRUE)
+paste("Sorted by confidence. ----------------------------------")
+inspect(confidence_fnps4)
+```
+
+```{r}
+plot(fnps4_rules, method = 'graph', control = list(cex = 0.7))
+```
+
+
+# 23.Generate summary reports for summary and lift rules.
+```{r}
+paste("Rules Report")
+paste("Support")
+summary(rules@quality$support)
+paste("Lift")
+summary(rules@quality$lift)
+```
+
+```{r}
+paste("Fortnite PS4 Rules Report")
+paste("Support")
+summary(rules@quality$support)
+paste("Lift")
+summary(rules@quality$lift)
+```
+
+# 24.Comparing Fornite PS4 rule results to the other rules.
+
+```{r}
+support_list <- rules@quality$support
+mean_fnps4_support <- mean(fnps4_rules@quality$support)
+lower_than_mean_rules <- support_list[support_list>c(mean_fnps4_support)]
+support_rank <- length(lower_than_mean_rules)
+support_rank
+```
+```{r}
+paste("On average, Fortnite PS4 has the", support_rank, "largest support of all the", length(rules), "rules")
+```
+
+```{r}
+confidence_list <- rules@quality$confidence
+mean_fnps4_confidence <- mean(fnps4_rules@quality$confidence)
+lower_than_mean_rules_confidence <- confidence_list[confidence_list>c(mean_fnps4_confidence)]
+confidence_rank <- length(lower_than_mean_rules_confidence)
+confidence_rank
+```
+```{r}
+paste("On average, Fortnite PS4 has the", confidence_rank, "largest confidence of all the", length(rules), "rules")
+```
+
+# Summary
+Skull and Bones PS4 could sell well as part of a bundle with Fortnite PS4 as could Fallout 76 PS4 Preorder these are shown by the high lift, although this is with low support (Hard to tell if this is due to the sample size or if this just has low support).

@@ -1,7 +1,5 @@
 language: r
-rvm:
- - 3.5.1
- - r
- 
- install: true
- 
+r:
+  - oldrel
+  - release
+  - devel

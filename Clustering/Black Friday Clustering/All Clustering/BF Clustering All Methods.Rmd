@@ -174,3 +174,6 @@ Now I can visualise this using plot.
 ```{r}
 plot(hdb, show_flat = T, gradient = c("yellow", "orange", "red", "blue"))
 ```
+
+#Summary
+From this you can begin to look at the KMeans clusting, AP clustering and the DBSCAN scatter plots. The suppliers in the bottom left hand corner can be questioned whether they contribute value to the retailers range as they sell so few products at a low value. The suppliers in the low center and the bottom right can be looked into how they can push the suppliers products better, this is as the retailer can profit more off of selling greater quantites due to their higher value products. The supliers in the top and mid left are worth trying to maintain as they sell at such high quantities it is a steady income for the retailer.

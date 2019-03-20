@@ -1,0 +1,42 @@
+---
+title: "Correlogram Exercise"
+output: html_notebook
+---
+
+```{r}
+setwd("C:/Users/Ashley Rainbow/Desktop/Data Fellowship/data-fellowship/Data Visualisation/Data Viz Exercise/")
+#install.packages("ggcorrplot")
+library(tidyverse)
+library(ggplot2)
+library(ggcorrplot)
+```
+
+```{r}
+chol <- read.table("Chol.txt", header = T)
+```
+
+```{r}
+chol_cor <- chol
+chol_cor$SMOKE <- as.integer(chol$SMOKE)
+chol_cor$MORT <- as.integer(chol$MORT)
+chol_cor$BLOOD <- as.integer(chol$BLOOD)
+
+corr <- round(cor(chol_cor), 1)
+corr
+```
+
+```{r}
+ggcorrplot(corr = corr, method = "circle", type = "upper", ggtheme = theme_minimal(), title = "Chol Correlations Matrix", legend.title = "Corr. level")
+```
+
+```{r}
+ggplot(data = chol, mapping = aes(x = WEIGHT, y = HEIGHT)) +
+  geom_smooth(method = lm, se = F) +
+  geom_point()
+```
+
+```{r}
+ggplot(data = chol, mapping = aes(x = CHOL, y = AGE)) +
+  geom_smooth(method = lm, se = F) +
+  geom_point()
+```

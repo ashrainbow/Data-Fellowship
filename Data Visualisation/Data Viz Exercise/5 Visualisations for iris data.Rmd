@@ -1,0 +1,97 @@
+---
+title: "Visualisation Practice Exercise"
+output: html_notebook
+---
+#Import libraries & Iris data 
+```{r}
+library(ggplot2)
+library(ggcorrplot)
+library(tidyverse)
+library(plotly)
+library(reshape2)
+data(iris)
+summary(iris)
+```
+
+# 1. Scatter Plot
+```{r}
+petal_sizes <- plot_ly(data = iris, x = ~Petal.Width, y = ~Petal.Length, color = ~Species, type = 'scatter', mode = 'markers')    
+petal_sizes
+```
+I have started with a basic scatter plot to get a quick and clear understanding of difference in petal sizes between the different species of Iris.
+
+# 2. Circular histogram
+```{r}
+ggplot(petal_sizes, aes(x = Petal.Width, y= Petal.Length, col = Species)) + geom_bar(stat='identity') + coord_polar()
+```
+The circular histogram gives a different perspective on the differences between the species for example the further around the circle the specie, the wider the petals leaves. Looking at the histogram you can see that the the Setosa generally have the thinnest and shortest petals. Whereas the Virginica has the widest leaves but similar in length.
+
+# 3. Bubble scatter plot
+```{r}
+iris$Petal.Size <- (iris$Petal.Length*iris$Petal.Width)
+max_marker_size <- 40
+data <- iris
+sizeref <- 2.0 * max(iris$Petal.Size) / (max_marker_size**2)
+
+petals <- plot_ly(data, x = ~Petal.Width, y = ~Petal.Length, text = ~Species, type = 'scatter', mode = 'markers', color = ~Species, colors = 'Paired', sizes = c(10, 50),
+        marker = list(size = ~Petal.Size, opacity = 0.5, sizemode = 'area', sizeref = sizeref)) %>%
+  layout(title = 'Petal Sizes by Species',
+         xaxis = list(showgrid = T),
+         yaxis = list(showgrid = T),
+         showlegend = T)
+petals
+```
+The bubble scatter plot shows similar information to the standard scatter plot, with a bit more clarity on the size comparison between the species. 
+The bubbles refer to the Petal.Size attribute. This is calculated by multiplying the width by the length of the petal. This will give you a general idea of how large one petal is compared to another.
+
+# 4.Dumbbell plot
+```{r}
+min_setosa_swidth <- min(iris$Sepal.Width[iris$Species == "setosa"])
+max_setosa_swidth <- max(iris$Sepal.Width[iris$Species == "setosa"])
+min_versicolor_swidth <- min(iris$Sepal.Width[iris$Species == "versicolor"])
+max_versicolor_swidth <- max(iris$Sepal.Width[iris$Species == "versicolor"])
+min_virginica_swidth <- min(iris$Sepal.Width[iris$Species == "virginica"])
+max_virginica_swidth <- max(iris$Sepal.Width[iris$Species == "virginica"])
+
+sepal_widths <- data.frame(Species = unique(iris$Species), min_width = c(min_setosa_swidth, min_versicolor_swidth, min_virginica_swidth), max_width =
+                             c(max_setosa_swidth, max_versicolor_swidth, max_virginica_swidth))
+
+sepal_widths
+
+```
+I started by setting up a new data frame to show the ranges for each specie to make the plotting stage easier.
+
+```{r}
+sepal_sizes <- plot_ly(sepal_widths, color = I("gray80")) %>%
+  add_segments(x = ~min_width, xend = ~max_width, y = ~Species, yend = ~Species, showlegend = FALSE) %>%
+  add_markers(x = ~min_width, y = ~Species, name = "min_width", color = I("green")) %>%
+  add_markers(x = ~max_width, y = ~Species, name = "max_width", color = I("blue")) %>%
+  layout(
+    title = "Iris Species Sepal Width",
+    xaxis = list(title = "Sepal Width"),
+    margin = list(l = 65)
+  )
+
+sepal_sizes
+```
+The dumbbell plot shows the extremities of each specie, this gives you an idea of the different ranges that each specie can have and clearly comparable between them.
+
+# 5. Stacked barcharts
+```{r}
+mean_setosa_petal_length <- mean(iris$Petal.Length[iris$Species == "setosa"])
+mean_setosa_sepal_length <- mean(iris$Sepal.Length[iris$Species == "setosa"])
+mean_versicolor_petal_length <- mean(iris$Petal.Length[iris$Species == "versicolor"])
+mean_versicolor_sepal_length <- mean(iris$Sepal.Length[iris$Species == "versicolor"])
+mean_virginica_petal_length <- mean(iris$Petal.Length[iris$Species == "virginica"])
+mean_virginica_sepal_length <- mean(iris$Sepal.Length[iris$Species == "virginica"])
+
+average_lengths <- data.frame(Species = unique(iris$Species), mean_petal_length = c(mean_setosa_petal_length, mean_versicolor_petal_length, mean_virginica_petal_length), mean_sepal_length = c(mean_setosa_sepal_length, mean_versicolor_sepal_length, mean_virginica_sepal_length))
+average_lengths
+```
+Like with the dumbbell plot creating a new data frame with the mean lengths for the species makes plotting the bar charts simpler.
+```{r}
+melted_data <- melt(average_lengths, id.vars = "Species")
+ggplot(melted_data, aes(x = Species, y = value, fill = variable))+
+  geom_bar(stat = "identity")
+```
+The stacked bar chart shows a comparison of the petal length and the sepal length and makes it easy to compare these to the other species.

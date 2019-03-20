@@ -1,0 +1,25 @@
+---
+title: "Histogram Exercise"
+output: html_notebook
+---
+
+```{r}
+setwd("C:/Users/Ashley Rainbow/Desktop/Data Fellowship/data-fellowship/Data Visualisation/Data Viz Exercise")
+library(ggplot2)
+```
+
+```{r}
+data("mtcars")
+```
+
+```{r}
+ggplot(mtcars, aes(x = mpg)) +
+  geom_histogram(col = "black", fill = "dark blue", binwidth = 0.5) +
+  labs(title = "Miles per Gallon Plot", x = "Miles per Gallon", y = "Count of Appearances")
+```
+
+```{r}
+ggplot(mtcars, aes(x = cyl)) +
+  geom_histogram(col = "black", fill = "dark blue", binwidth = 0.5) +
+  labs(title = "Cylinder Plot", x = "Number of Cylinders", y = "Count of Appearances")
+```

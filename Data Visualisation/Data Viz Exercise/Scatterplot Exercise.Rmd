@@ -1,0 +1,52 @@
+---
+title: "Scatterplot Exercise"
+output: html_notebook
+---
+
+```{r}
+setwd("C:/Users/Ashley Rainbow/Desktop/Data Fellowship/data-fellowship/Data Visualisation/Data Viz Exercise")
+#install.packages("wbstats")
+library(wbstats)
+library(ggplot2)
+```
+
+```{r}
+population_data <- wb(country = "all", indicator = c("SP.POP.TOTL", "NY.GDP.MKTP.CD"),
+                      startdate = 2017, enddate = 2017, return_wide = TRUE)
+population_data
+```
+
+```{r}
+population_data <- population_data[complete.cases(population_data), ]
+population_data
+```
+
+
+```{r}
+plot(population_data$SP.POP.TOTL, population_data$NY.GDP.MKTP.CD)
+abline(lm(population_data$SP.POP.TOTL~population_data$NY.GDP.MKTP.CD), col="red")
+
+ggplot(population_data, aes(x=SP.POP.TOTL, y=NY.GDP.MKTP.CD)) +
+  geom_point()
+```
+
+```{r}
+ggplot(population_data, aes(x=SP.POP.TOTL, y=NY.GDP.MKTP.CD)) +
+  geom_point() + 
+  geom_text(label=population_data$country, check_overlap = T, vjust = "bottom", nudge_y = 100, angle = 30, size = 3) + 
+  labs(title="GDP to Population plot",x="Population", y = "GDP")
+```
+
+```{r}
+population_data$iso3c <- as.factor(population_data$iso3c)
+population_data$iso2c <- as.factor(population_data$iso2c)
+population_data$date <- as.integer(population_data$date)
+population_data$country <- as.factor(population_data$country)
+population_data
+```
+
+
+```{r}
+plot(population_data)
+```
+

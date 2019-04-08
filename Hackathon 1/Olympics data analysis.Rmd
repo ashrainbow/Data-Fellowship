@@ -1,0 +1,63 @@
+---
+title: "Data Fellowship Hackathon"
+output: html_notebook
+---
+#Set WD and import libraries
+```{r}
+setwd("C:/Users/Ashley Rainbow/Desktop/Data Fellowship/data-fellowship/Hackathon 1")
+library(tidyverse)
+library(ggplot2)
+library(googleVis)
+```
+
+
+#Import data
+athlete_events contains the data regarding to the medals won. noc_regions contains the country names against their 'noc'. 
+```{r}
+olympics <- read.csv("athlete_events.csv")
+NOC <- read.csv("noc_regions.csv")
+```
+
+#Assign values to meadals
+This will allow me to sum the score for each country.
+```{r}
+olympics$Value[olympics$Medal == "Gold"] <- 3
+olympics$Value[olympics$Medal == "Silver"] <- 2
+olympics$Value[olympics$Medal == "Bronze"] <- 1
+olympics$Value[is.na(olympics$Medal)] <- 0
+```
+
+#Structuring the data
+Adding a country column to olympics data based on the 'NOC' field. 
+Due to some countries from past olympics no longer existing we only filter for events after the year 2000. 
+```{r}
+olympics <- merge(olympics,NOC,by="NOC")
+modern_olympics <- subset(olympics, olympics$Year >= 2000)
+```
+
+#Country Scores
+Grouping on the country name and summing the 'Value' column allows me to calculate the score for each country. 
+```{r}
+country_collapse <- modern_olympics %>% group_by(region) %>% summarise(Total = sum(Value))
+```
+
+#Tidying the data
+Due to some mismatches between the country column and Google's naming convention we have to adjust some of the names.
+There is also an na field in the data so this must be removed.
+```{r}
+country_collapse <- na.exclude(country_collapse)
+country_collapse$region <- as.character(country_collapse$region) 
+country_collapse$region[country_collapse$region == 'USA'] <- 'United States'
+country_collapse$region[country_collapse$region == 'UK'] <- 'United Kingdom'
+country_collapse$region[country_collapse$region == 'Boliva'] <- "Bolivia"
+country_collapse$region[country_collapse$region == 'Republic of Congo'] <- 'CG'
+country_collapse$region[country_collapse$region == 'Democratic Republic of the Congo'] <- 'CD'
+country_collapse$region[country_collapse$region == 'South Sudan'] <- 'SS'
+```
+
+#Plotting the Map
+The map opens into a new web browser tab.
+```{r}
+map <- gvisGeoChart(country_collapse, locationvar = 'region', colorvar = 'Total', hovervar = 'Total', options = list(width=1000, height=700))
+plot(map)
+```

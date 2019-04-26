@@ -1,0 +1,137 @@
+---
+title: "Regression Practice"
+output: html_notebook
+---
+
+#Overview
+Regression is used to find relationships between and independant variable and a dependant variable.  
+This can be shown as: *y = B^~0~ + B^~1~X
+
+#Brief
+Creating a model to predict income.
+#Set up
+loading pROC, car, caTools, ggplot2,
+```{r}
+#pROC is used for visualisatio, smoothing and comparing receiver operating characteristic.
+library(pROC)
+#car calculates type-II or type-III analysis-of-variance tables for model objects
+library(car)
+#caTools contains several basic utility functions
+library(caTools)
+library(ggplot2)
+library(plotly)
+library(tidyverse)
+```
+
+```{r}
+prestige <- read.csv("Prestige.csv")
+head(prestige)
+str(prestige)
+```
+
+#Visualise the Prestige data set using a scatterplot
+```{r}
+plot( x = prestige$education, y = prestige$income, xlab = "Education", ylab = "Income", pch = 20)
+```
+
+It looks like there is not a clear linear correlation between education and income.
+
+#Analyse the linear relationships in the prestige data set.
+```{r}
+cor.test( ~ income + education,
+         data=prestige,
+         method = "pearson",
+         conf.level = 0.95)
+```
+
+#Splitting the data set
+```{r}
+split <- sample.split(prestige,SplitRatio = 0.75)
+train <- subset(prestige,split==TRUE)
+test <- subset(prestige,split==FALSE)
+```
+
+#Creating a linear regression model
+```{r}
+Inc_Edu_LM <- lm(data = train, income ~ education)
+summary(Inc_Edu_LM)
+```
+
+#Plotting Education against income linear regression model
+```{r}
+plot(Inc_Edu_LM)
+```
+
+#Plotting linear regression line
+```{r}
+curve(predict(Inc_Edu_LM, data.frame(education=x)), lwd = 2,  add=T)
+```
+
+```{r}
+test$predicted.income <- predict(Inc_Edu_LM, test)
+predicted_plot <- test %>%
+  ggplot(aes(income, predicted.income)) +
+  geom_point(alpha=0.5) +
+  stat_smooth(aes(colour = "black"), method = "lm") + 
+  xlab("Actual value of income") +
+  ylab("Predicted value of medv") +
+  theme_bw()
+predicted_plot
+```
+
+
+#Calculating RMSE 
+```{r}
+error <- test$income-test$predicted.income
+l_rmse <- sqrt(mean(error^2))
+l_rmse
+```
+
+#Inspect linear model
+```{r}
+summary(Inc_Edu_LM)
+```
+
+#Eyeball an exponential line of best fit on to the scatter graph
+```{r}
+plot( x = prestige$education, y = prestige$income, xlab = "Education", ylab = "Income", pch = 20)
+curve(exp(0.6*x)+4000, lwd = 3, add = T)
+```
+
+#Plot a non-linear model using 'NLS'
+```{r}
+nonLinearModel <- nls(income ~ exp(b*education) + c, prestige, start = list(b = 1, c = 0))
+plot(train$education, train$income, pch = 16, xlab = "Education", ylab = "Income")
+curve(predict(nonLinearModel, data.frame(education=x)), lwd = 3, add=T)
+```
+
+#Look at some summary statistics for the exponential model
+```{r}
+summary(nonLinearModel)
+```
+
+# Plot predicted vs actual income
+```{r}
+test$predicted.nonLinear <- predict(nonLinearModel, test)
+pl1 <- test %>%
+  ggplot(aes(income,predicted.nonLinear)) +
+  geom_point(alpha=0.5) +
+  stat_smooth() +
+  xlab('Actual value of income') +
+  ylab('Predicted value of income') +
+  theme_bw()
+pl1
+```
+
+#Calculate the RMSE 
+```{r}
+error <- test$income-test$predicted.nonLinear
+nl_rmse <- sqrt(mean(error^2))
+nl_rmse
+```
+
+#Compare RMSE of the linear vs the non-linear model
+```{r}
+cat("linear model =", l_rmse,"\nnon-linear model =", nl_rmse)
+```
+

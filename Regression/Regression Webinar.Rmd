@@ -1,0 +1,108 @@
+---
+title: "Regression"
+output: html_notebook
+---
+
+```{r}
+library(MASS)
+library(corrplot)
+library(ggplot2)
+library(caTools)
+library(dplyr)
+library(plotly)
+```
+
+#Import Dataset
+```{r}
+boston <- Boston
+```
+
+#Explore the data using the usual summary statistics
+```{r}
+summary(boston)
+```
+
+```{r}
+str(boston)
+```
+
+```{r}
+head(boston)
+```
+
+#Cleaning the data
+Remove the 'black' variable.
+```{r}
+boston$black <- NULL
+```
+
+#Seperate data into a test and train data sets.
+```{r}
+set.seed(123)
+sample <- sample.int(n = nrow(boston), size = floor(.75*nrow(boston)), replace = F)
+train <- boston[sample,]
+test <- boston[-sample,]
+```
+
+#Finding Correlations
+```{r}
+cor(boston, boston$medv)
+```
+
+#Assign the correlation to a new variable
+```{r}
+boston_cor <- cor(boston)
+boston_cor
+```
+
+#Visualise the corrolations
+```{r}
+corrplot(boston_cor, method = 'circle')
+```
+
+#Isolating 'medv' corrolation to other variables as it is the dependent variable that we're trying to predict.
+
+#Build a model
+##Univariate
+Select one variable to predict 'medv' and use 'lm' to build a linear model of our data.
+```{r}
+univariate_model <- lm(medv ~ rm, data = train)
+summary(univariate_model)
+```
+
+##Plot the model
+```{r}
+plot(univariate_model)
+```
+
+#Plot the residuals
+```{r}
+res <- residuals(univariate_model)
+res <- as.data.frame(res)
+ggplot(res, aes(res)) + geom_histogram(fill = 'blue', alpha = 0.5)
+```
+
+#Create a variable to capture predicted prices.
+```{r}
+test$predcited.medv <- predict(univariate_model, test)
+```
+
+```{r}
+pl1<-test %>%
+  ggplot(aes(medv, predicted.medv)) +
+  geom_point(alpha = 0.5) +
+  stat_smooth(method = "lm") +
+  xlab('Actual value of medv') +
+  ylab('Predicted value of medv') +
+  theme_bw()
+ggplotly(pl1)
+```
+
+#Use Mean Squared Error to check whether the model fits the data.
+
+```{r}
+error <- test$medv - test$predicted.medv
+rmse <- sqrt(mean(error^2))
+rmse
+```
+

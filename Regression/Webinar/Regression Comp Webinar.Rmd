@@ -1,0 +1,158 @@
+---
+title: "Predicting House Prices"
+output: html_notebook
+---
+
+Grab your libraries. You'll need the following for this tutorial.
+```{r}
+library(MASS)
+library(corrplot)
+library(ggplot2)
+library(caTools)
+library(dplyr)
+library(plotly)
+```
+
+# Import Boston dataset
+'Boston' is included in the 'MASS' package
+```{r}
+boston <- Boston
+```
+
+# Explore the data
+```{r}
+summary(boston)
+```
+
+```{r}
+str(boston)
+```
+
+```{r}
+head(boston)
+```
+
+*definitions for the data fields:* https://stat.ethz.ch/R-manual/R-devel/library/MASS/html/Boston.html
+
+`MEDV` is the price variable. That's our dependent variable.
+
+#Cleaning the data
+Remove the 'black' variable.
+```{r}
+boston$black <- NULL
+```
+
+#Split the data between test and train
+
+```{r}
+set.seed(123) 
+sample <- sample.int(n = nrow(boston), size = floor(.75*nrow(boston)), replace = F)
+train <- boston[sample, ] 
+test  <- boston[-sample, ]
+```
+
+#Finding correlations
+
+```{r}
+cor(boston,boston$medv)
+```
+
+Assign the correlations to a variable
+```{r}
+boston_cor <- cor(boston)
+boston_cor
+```
+
+#Visualise these corrolations
+```{r}
+corrplot(boston_cor, method = "circle")
+```
+
+
+# Build a univariate model
+`medv` and `lm` will be used to build a linear model of our data.
+```{r}
+univariate_model <- lm(medv ~ rm, data=train)
+summary(univariate_model)
+```
+
+#Plot the new model.
+```{r}
+plot(univariate_model)
+```
+
+Use `abline` to plot your new model against the two variables you've chosen (one will be `medv`).
+
+Plot the residuals.
+```{r}
+# Use residuals to grab the residuals of the univariate model and pop it into a variable called `res`
+res <- residuals(univariate_model)
+# Convert residuals to a data frame so that it can be used elsewhere
+res <- as.data.frame(res)
+# Use ggplot to create a histogram
+ggplot(res,aes(res)) +  geom_histogram(fill='blue',alpha=0.5)
+```
+
+#Capture predicted prices.
+```{r}
+test$predicted.medv <- predict(univariate_model,test)
+```
+
+#Plot it
+```{r}
+pl1 <- test %>% 
+  ggplot(aes(medv,predicted.medv)) +
+  geom_point(alpha=0.5) + 
+  stat_smooth(method = "lm") +
+  xlab('Actual value of medv') +
+  ylab('Predicted value of medv') +
+  theme_bw()
+ggplotly(pl1)
+```
+
+#Judge whether or not the model fits the data.
+```{r}
+error <- test$medv-test$predicted.medv
+rmse <- sqrt(mean(error^2))
+rmse
+```
+
+#Multivariate model
+Repeat the previous steps with multiple variables
+```{r}
+multivariate_model <- lm(medv ~ .,data=train)
+summary(multivariate_model)
+```
+
+#Plot those results.
+```{r}
+plot(multivariate_model)
+```
+
+#Check the residuals.
+```{r}
+res <- residuals(multivariate_model)
+# Convert residuals to a DataFrame 
+res <- as.data.frame(res)
+ggplot(res,aes(res)) +  geom_histogram(fill='blue',alpha=0.5)
+```
+
+#Plot it.
+```{r}
+test$predicted.medv <- predict(multivariate_model,test)
+pl2 <- test %>% 
+  ggplot(aes(medv,predicted.medv)) +
+  geom_point(alpha=0.5) + 
+  stat_smooth(aes(colour='black'), method = "lm") +
+  xlab('Actual value of medv') +
+  ylab('Predicted value of medv') +
+  theme_bw()
+ggplotly(pl2)
+```
+
+#Check the error
+```{r}
+error <- test$medv-test$predicted.medv
+rmse <- sqrt(mean(error^2))
+rmse
+```

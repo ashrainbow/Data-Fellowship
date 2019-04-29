@@ -5,12 +5,12 @@ output: html_notebook
 
 #Overview
 Regression is used to find relationships between and independant variable and a dependant variable.  
-This can be shown as: *y = B^~0~ + B^~1~X
+This can be shown as: *y = B^~0~ + B^~1~X*
 
 #Brief
 Creating a model to predict income.
 #Set up
-loading pROC, car, caTools, ggplot2,
+loading pROC, car, caTools, ggplot2, plotly and tidyverse
 ```{r}
 #pROC is used for visualisatio, smoothing and comparing receiver operating characteristic.
 library(pROC)
@@ -23,9 +23,12 @@ library(plotly)
 library(tidyverse)
 ```
 
+#Import the 'Prestige' dataset.
 ```{r}
 prestige <- read.csv("Prestige.csv")
 head(prestige)
+```
+```{r}
 str(prestige)
 ```
 
@@ -46,6 +49,7 @@ cor.test( ~ income + education,
 
 #Splitting the data set
 ```{r}
+set.seed(123)
 split <- sample.split(prestige,SplitRatio = 0.75)
 train <- subset(prestige,split==TRUE)
 test <- subset(prestige,split==FALSE)
@@ -53,28 +57,25 @@ test <- subset(prestige,split==FALSE)
 
 #Creating a linear regression model
 ```{r}
-Inc_Edu_LM <- lm(data = train, income ~ education)
-summary(Inc_Edu_LM)
+Income_Education_LM <- lm(data = train, income ~ education)
+summary(Income_Education_LM)
 ```
 
-#Plotting Education against income linear regression model
+#Plotting Education against Income linear regression model
 ```{r}
-plot(Inc_Edu_LM)
+plot(train$education, train$income, pch = 16)
+curve(predict(Income_Education_LM, data.frame(education=x)), lwd = 2,  add=T)
 ```
 
-#Plotting linear regression line
+#Predict the Income based on the Education values and plot the results
 ```{r}
-curve(predict(Inc_Edu_LM, data.frame(education=x)), lwd = 2,  add=T)
-```
-
-```{r}
-test$predicted.income <- predict(Inc_Edu_LM, test)
+test$predicted.income <- predict(Income_Education_LM, test)
 predicted_plot <- test %>%
   ggplot(aes(income, predicted.income)) +
   geom_point(alpha=0.5) +
   stat_smooth(aes(colour = "black"), method = "lm") + 
   xlab("Actual value of income") +
-  ylab("Predicted value of medv") +
+  ylab("Predicted value of income") +
   theme_bw()
 predicted_plot
 ```
@@ -89,8 +90,11 @@ l_rmse
 
 #Inspect linear model
 ```{r}
-summary(Inc_Edu_LM)
+summary(Income_Education_LM)
 ```
+
+#Look at the original scatterplot and decide which non-liner function would fit the data
+The scatterplot looks to have an exponential increase after 12 therefor an exponential function would fit this dataset.
 
 #Eyeball an exponential line of best fit on to the scatter graph
 ```{r}
